@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <style>
+    #map-canvas { width:500px; height:500px; }
+    .layer-wizard-search-label { font-family: sans-serif };
+  </style>
+  <style>
+	.gm-style .gm-style-iw {
+   text-align:left;
+}
+	</style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqepH72tTwi3I_hLZUVFBckelv25V-Kcw&callback=initMap">
+  </script>
+  </head>
+  <link href="timeentry/jquery.timeentry.css" rel="stylesheet">
+<script src="timeentry/jquery.min.js"></script>
+<script src="timeentry/jquery.plugin.js"></script>
+<script src="timeentry/jquery.timeentry.js"></script>
+
+
+  <body>
+  <table align="center">
+  <tr><td>Marker Count : <label id="mcountlbl"></label></td></tr>
+ <tr>
+ <th width="100%">
+    <div id="map" style="width: 1000px; height: 800px"></div>
+    </th>
+    </tr>
+    </table>
+  
+  
+    <!--<div id="map-canvas"></div>-->
+  </body>
+</html>
+<script type="text/javascript">
+  var lastmarker;
+  var lastpoint;
+  var layer_0;
+  var ccc=0;
+  var map;
+  var layer_0;
+  var infowindow;
+  var infowindowtitle;
+  var ttest="OK";
+  var drageddd=false;
+  
+  	function xmlhttpcond(xht)
+	{
+		if (xht.readyState==4 && xht.status==200) {
+			return true;
+		}
+		else{
+			return false;
+		}
+	} //xmlhttpcond	
+	function xmlhttpfunc()
+	{
+		if (window.XMLHttpRequest) {
+		// code for IE7+, Firefox, Chrome, Opera, Safari
+		return new XMLHttpRequest();
+	  } else { // code for IE6, IE5
+		return new ActiveXObject("Microsoft.XMLHTTP");
+	  }
+	}
+	function tabfunc(divnme)
+	{
+			document.getElementById(divnme).style.zIndex=999;
+			if (divnme=="div1")
+			{
+				document.getElementById("div2").style.zIndex=998;
+				document.getElementById("div3").style.zIndex=997;
+				
+			}
+			else if (divnme=="div2")
+			{
+				document.getElementById("div1").style.zIndex=998;
+				document.getElementById("div3").style.zIndex=997;
+			}
+			else if (divnme=="div3")
+			{
+				document.getElementById("div1").style.zIndex=998;
+				document.getElementById("div2").style.zIndex=997;
+			}
+		}
+		
+		
+		
+	function process(form) 
+	{
+		var details = document.getElementById("data").value;
+		//var markericon = document.getElementById("markers").value;
+		var markericon = "cust_marker2.png";
+		var atspd= document.getElementById("at_speed").value;
+		var frspd= document.getElementById("from_speed").value;
+		var tospd= document.getElementById("to_speed").value;
+		var frtme= document.getElementById("from_time").value;
+		var totme= document.getElementById("to_time").value;
+		var bufrad= "50";
+        var lat = lastmarker.getPosition().lat();
+        var lng = lastmarker.getPosition().lng();
+        var myurl = "myserverwrite.php?lat=" +lat+ "&lng=" +lng+ "&details="+details+ "&mkr="+markericon+ "&atspd="+atspd+ "&frspd="+frspd+ "&tospd="+tospd+ "&frtme="+frtme+ "&totme="+totme+ "&bufrad="+bufrad;
+		$.ajax({url: myurl, success: function(result){
+			//alert("Location Details Saved"); 
+			var ful_string = result;
+			parts = ful_string.split("|");
+			document.getElementById('mcountlbl').innerHTML=parts[1];
+			try {infowindow.close();}catch(err) {}
+			try {infowindowtitle.close();}catch(err) {}
+			var marker = createMarker(lastmarker.getPosition(),details,markericon,parts[0],atspd,frspd,tospd,frtme,totme,bufrad);
+			lastmarker._myCircle.setMap(null);
+			lastmarker.setMap(null);
+			google.maps.event.trigger(marker,"click");
+		}});
+      }
+ 
+	function process2(form) 
+	{
+        var details = document.getElementById("data").value;
+		//var markericon = document.getElementById("markers").value;
+		var markericon = "cust_marker2.png";
+		var atspd= document.getElementById("at_speed").value;
+		var frspd= document.getElementById("from_speed").value;
+		var tospd= document.getElementById("to_speed").value;
+		var frtme= document.getElementById("from_time").value;
+		var totme= document.getElementById("to_time").value;
+		var bufrad= "50";
+		
+        var lat = lastmarker.getPosition().lat();
+        var lng = lastmarker.getPosition().lng();
+		var pinid = lastmarker.mkrId;
+		
+        var myurl = "myserverupdate.php?pinid=" +pinid+ "&lat=" +lat+ "&lng=" +lng+ "&details="+details+ "&mkr="+markericon+ "&atspd="+atspd+ "&frspd="+frspd+ "&tospd="+tospd+ "&frtme="+frtme+ "&totme="+totme+ "&bufrad="+bufrad;
+		
+		$.ajax({url: myurl, success: function(result){
+			//alert("Location Details Updated");
+			try {infowindow.close();}catch(err) {}
+			try {infowindowtitle.close();}catch(err) {}
+			var marker = createMarker(lastmarker.getPosition(),details,markericon,pinid,atspd,frspd,tospd,frtme,totme,bufrad);
+			lastmarker._myCircle.setMap(null);
+			lastmarker.setMap(null);
+				lastmarker=marker;
+			google.maps.event.trigger(marker,"click");
+		}});
+      }
+	  
+	function process3(form) 
+	{
+		var pinid = lastmarker.mkrId;
+        var myurl = "myserverdelete.php?pinid=" +pinid;
+		$.ajax({url: myurl, success: function(result){
+			//alert("Location Details Updated");
+			document.getElementById('mcountlbl').innerHTML=result;
+			try {infowindow.close();}catch(err) {}
+			try {infowindowtitle.close();}catch(err) {}
+			lastmarker._myCircle.setMap(null);
+			lastmarker.setMap(null);	
+		}});
+      }
+	  
+	function process4(form)
+	{
+		try {infowindow.close();}catch(err) {}
+			try {infowindowtitle.close();}catch(err) {}
+			lastmarker._myCircle.setMap(null);
+			lastmarker.setMap(null);
+	}
+	  
+	function load_old_mkrs()
+	{
+		$.ajax({url: "myserverread.php", success: function(result){
+		var ful_string = result;
+		lines = ful_string.split("\n");
+		for (var i=0; i<lines.length; i++) {
+			if (lines[i].length > 1) {
+				// === split each line into parts separated by "|" and use the contents ===
+				parts = lines[i].split("#|*@");
+				var pinid = parts[0];
+				var latitude = parseFloat(parts[1]);
+				var longitude = parseFloat(parts[2]);
+				var details = parts[3];
+				var markericon = parts[4];
+				var atspd = parts[5];
+				var frspd = parts[6];
+				var tospd = parts[7];
+				var frtme = parts[8];
+				var totme = parts[9];
+				var bufrad = parts[10];
+				var point = {lat: latitude, lng: longitude};
+				var marker = createMarker(point,details,markericon,pinid,atspd,frspd,tospd,frtme,totme,bufrad);
+				lastmarker = marker;
+				ccc++;
+				}
+			}
+			document.getElementById('mcountlbl').innerHTML=ccc;
+		}});
+	}
+	
+			 
+	function createInputMarker(point) 
+	{
+		//var mynewpoint = point;
+
+			$.ajax({url: "overlapcal.php?pid=' '", success: function(result){
+            var ful_string = result;
+					lines = ful_string.split("\n");
+					for (var i=0; i<lines.length; i++) {
+						if (lines[i].length > 1) {
+							parts = lines[i].split("|");
+							var latitude = parseFloat(parts[0]);
+							var longitude = parseFloat(parts[1]);
+							var dbpoint = {lat: latitude, lng: longitude};
+							var d = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(latitude,longitude), new google.maps.LatLng(point));
+							if (d<100.00)
+							{
+								ttest = "fail";
+							}
+						}
+					}
+					if (ttest=="fail")
+					{
+						alert ("Buffer Overlaps! Please Choose a different Location.");
+						ttest="OK"
+					}
+					else
+					{
+						
+					
+		
+		
+		
+		
+		
+	  
+    var iwform = '<center>'
+                 + '<form action="#">'
+                 + '<div style="position: relative; min-height:200px; min-width:300px">'
+                 + '<input type="button"  onclick="tabfunc(this.name);" value="Description" name="div1"  /><input type="button"  onclick="tabfunc(this.name);" value="Speed" name="div2" /><input type="button"  onclick="tabfunc(this.name);" value="Time" name="div3" /><br><br>'
+                 + '<div style="position: absolute; z-index:999; background:#FFFFFF; width:100%; min-height:150px" id="div1" >'
+                 + 'Enter details:<br><textarea name="data" id="data" rows="5" cols="32">'
+                 + '<\/textarea><br>'
+                 /*+ 'Select a Marker:<br>'
+                 + '<select name="markers" id="markers">'
+                 + '<option value="">default marker<\/option>'
+                 + '<option value="cust_marker1.png">custon marker 1<\/option>'
+                 + '<option value="cust_marker2.png">custon marker 2<\/option>'
+                 + '<option value="cust_marker3.png">custon marker 3<\/option>'
+                 + '<option value="cust_marker4.png">custon marker 4<\/option>'
+                 + '<option value="cust_marker5.png">custon marker 5<\/option>'
+                 + '<\/select><br><br>'
+                 + '<script>document.getElementById("markers").value="'+mkr+'";<\/script>'*/
+                 + '<\/div>'
+                 + '<div style="position: absolute; z-index:998; width:100%; background:#FFFFFF; min-height:150px" id="div2">'
+				 + 'To see this coin the user must be going<br><br>'
+                 + 'at <input id="at_speed" name="at_speed" type="number" style="width: 4em" />mph<br><br>'
+                 + 'between <input type="number" style="width: 4em" id="from_speed" name="from_speed" />mph and <input id="to_speed" name="to_speed" type="number" style="width: 4em" />mph'
+                 + '<\/div>'
+                 + '<div style="position: absolute; z-index:997; width:100%; background:#FFFFFF; min-height:150px" id="div3">'
+                 + 'To see this coin time must be between<br><br>'
+                 + '<p><input type="text" id="from_time" name="from_time" size="10" /><\/p> And<p><input type="text" id="to_time" name="to_time" size="10"/><\/p>'
+                 + '<\/div>'
+                 + '<\/div>'
+                 + '<div>'
+                 + '<input type="button" onclick="process4(this);" value="Cancle" />'
+                 + '<input type="button" onclick="process(this);" value="Save" />'
+                 + '<\/div>'
+                 + '<\/form><\/center>';
+				 
+				 
+				 infowindow.setContent(iwform);
+	
+
+
+
+		  var marker = new google.maps.Marker({position: point, map: map, draggable: true});
+		  
+		  var circle = new google.maps.Circle({
+		  strokeColor: '#FF0000',
+		  strokeOpacity: 0.8,
+		  strokeWeight: 2,
+		  fillColor: '#FF0000',
+		  fillOpacity: 0.35,
+		  map: map,
+		  radius: 50});
+		  circle.bindTo('center', marker, 'position');
+		  marker._myCircle = circle;
+		  marker._myCircle.setMap(map);
+		  
+		  
+		  
+		  
+		  marker.addListener('click', function() {
+			  
+			  
+			lastmarker = marker; 
+			 try {infowindow.close();}catch(err) {}
+		try {infowindowtitle.close();}catch(err) {}
+    infowindow.open(map, marker);
+	
+	$(function() {$('#from_time').timeEntry();$('#to_time').timeEntry();});
+						//$(function() {$('#to_time').timeEntry();});
+  });
+  marker.addListener('dragstart', function() {
+			
+			lastpoint=marker.getPosition();
+			
+  });
+		marker.addListener('dragend', function() {
+  			drageddd=true;
+			/*var markerIn = google.maps.geometry.poly.containsLocation(marker.getPosition(), layer_0);
+			
+			if (markerIn)
+			{*/
+			var mynewpoint = marker.getPosition();
+
+			$.ajax({url: "overlapcal.php?pid=' '", success: function(result){
+            var ful_string = result;
+					lines = ful_string.split("\n");
+					for (var i=0; i<lines.length; i++) {
+						if (lines[i].length > 1) {
+							parts = lines[i].split("|");
+							var latitude = parseFloat(parts[0]);
+							var longitude = parseFloat(parts[1]);
+							var dbpoint = {lat: latitude, lng: longitude};
+							var d = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(latitude,longitude), new google.maps.LatLng(mynewpoint.lat(),mynewpoint.lng()));
+							if (d<100.00)
+							{
+								ttest = "fail";
+							}
+						}
+					}
+					if (ttest=="fail")
+					{
+						alert ("Buffer Overlaps! Please Choose a different Location.");
+						marker.setPosition(lastpoint);
+						ttest="OK";
+					}
+					else
+					{
+						//infowindow.setContent(marker.info);
+						lastmarker = marker;
+						try {infowindow.close();}catch(err) {}
+						try {infowindowtitle.close();}catch(err) {}
+						infowindow.open(map, marker);
+						$(function() {$('#from_time').timeEntry();$('#to_time').timeEntry();});
+						//$(function() {$('#to_time').timeEntry();});
+					}
+        }});
+			/*}
+			else
+			{
+				marker.setPosition(lastpoint);
+			}*/
+  });
+		try {infowindow.close();}catch(err) {}
+		try {infowindowtitle.close();}catch(err) {}
+		lastmarker=marker;
+        infowindow.open(map, marker);
+		$(function() {$('#from_time').timeEntry();$('#to_time').timeEntry();});
+						//$(function() {$('#to_time').timeEntry();});
+        return marker;
+		}
+        }});
+      }
+	  
+	  
+	  
+	  
+	function createMarker(point,text,mkr,pinid,atspd,frspd,tospd,frtme,totme,bufrad) 
+	{ 
+	  
+	  
+	  /*if (mkr!="")
+	  {
+		  var iconpth = 'imgs/'+mkr;
+		  var marker = new google.maps.Marker({position: point, map: map, draggable: true, icon: iconpth});
+	  }
+	  else
+	  {
+		  var marker = new google.maps.Marker({position: point, map: map, draggable: true});
+	  }*/
+	  
+	  
+	  
+	  var iconpth = 'imgs/'+mkr;
+	  var marker = new google.maps.Marker({position: point, map: map, draggable: true, icon: iconpth});
+	  marker.mkrId=pinid;
+	  marker.desc=text;
+	  marker.tag = mkr;
+	  marker.atspd=parseFloat(atspd);
+	  marker.frspd=parseFloat(frspd);
+	  marker.tospd=parseFloat(tospd);
+	  marker.frtme=frtme;
+	  marker.totme=totme;
+	  marker.bufrad=bufrad;
+	  
+	  /*var cityCircle = new google.maps.Circle({
+            strokeColor: '#FF0000',
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: '#FF0000',
+            fillOpacity: 0.35,
+            map: map,
+            center: point,
+            radius: 50
+          });
+		  */
+		  
+		  
+		  var circle = new google.maps.Circle({
+		  strokeColor: '#FF0000',
+		  strokeOpacity: 0.8,
+		  strokeWeight: 2,
+		  fillColor: '#FF0000',
+		  fillOpacity: 0.35,
+		  map: map,
+		  radius: 50});
+		  circle.bindTo('center', marker, 'position');
+		  marker._myCircle = circle;
+		  marker._myCircle.setMap(map);
+				  
+	  
+	  
+	  
+	  marker.note = text;
+	  
+	  
+	  //new google.maps.InfoWindow({});
+	  
+	  
+	  //infowindowtitle.setContent(text);
+	  
+	  marker.addListener('click', function() {
+	
+			lastmarker = marker;
+			
+			
+			
+			try {infowindow.close();}catch(err) {}
+		try {infowindowtitle.close();}catch(err) {}
+		infowindowtitle.setContent(marker.note);
+		//infowindowtitle.content = marker.note;
+        infowindowtitle.open(map, marker);
+    //infowindowtitle.open(map, marker);
+  });
+
+		
+		var iwform2 = '<center>'
+                 + '<form action="#">'
+                 + '<div style="position: relative; min-height:200px; min-width:300px">'
+                 + '<input type="button"  onclick="tabfunc(this.name);" value="Description" name="div1"  /><input type="button"  onclick="tabfunc(this.name);" value="Speed" name="div2" /><input type="button"  onclick="tabfunc(this.name);" value="Time" name="div3" /><br><br>'
+                 + '<div style="position: absolute; z-index:999; background:#FFFFFF; width:100%; min-height:150px" id="div1" >'
+                 + 'Enter details:<br><textarea name="data" id="data" rows="5" cols="32">'
+                 + marker.desc
+                 + '<\/textarea><br>'
+                 /*+ 'Select a Marker:<br>'
+                 + '<select name="markers" id="markers">'
+                 + '<option value="">default marker<\/option>'
+                 + '<option value="cust_marker1.png">custon marker 1<\/option>'
+                 + '<option value="cust_marker2.png">custon marker 2<\/option>'
+                 + '<option value="cust_marker3.png">custon marker 3<\/option>'
+                 + '<option value="cust_marker4.png">custon marker 4<\/option>'
+                 + '<option value="cust_marker5.png">custon marker 5<\/option>'
+                 + '<\/select><br><br>'
+                 + '<script>document.getElementById("markers").value="'+mkr+'";<\/script>'*/
+                 + '<\/div>'
+                 + '<div style="position: absolute; z-index:998; width:100%; background:#FFFFFF; min-height:150px" id="div2">'
+				 + 'To see this coin the user must be going<br><br>'
+                 + 'at <input id="at_speed" name="at_speed" type="number" style="width: 4em" value="'+marker.atspd+'" />mph<br><br>'
+                 + 'between <input type="number" style="width: 4em" id="from_speed" name="from_speed" value="'+marker.frspd+'" />mph and <input id="to_speed" name="to_speed" type="number" style="width: 4em" value="'+marker.tospd+'" />mph'
+                 + '<\/div>'
+                 + '<div style="position: absolute; z-index:997; width:100%; background:#FFFFFF; min-height:150px" id="div3">'
+                 + 'To see this coin time must be between<br><br>'
+                 + '<p><input type="text" id="from_time" name="from_time" value="'+marker.frtme+'" size="10" /><\/p> And <p><input type="text" id="to_time" name="to_time" value="'+marker.totme+'" size="10" /><\/p>'
+                 + '<\/div>'
+                 + '<\/div>'
+                 + '<div>'
+                 + '<input type="button"  onclick="process2(this);" value="Update" />'
+                 + '<input type="button"  onclick="process3(this);" value="Delete" />'
+                 + '<input type="hidden" name="hdata" id="hdata" value="'+marker.mkrId +'" />'
+                 + '<\/div>'
+                 + '<\/form><\/center>';
+
+		marker.info = iwform2;
+		
+		
+		
+		marker.addListener('dragstart', function() {
+			
+			lastpoint=marker.getPosition();
+			
+  });
+		
+		
+		marker.addListener('dragend', function() {
+  			drageddd=true;
+			
+			/*var markerIn = google.maps.geometry.poly.containsLocation(marker.getPosition(), layer_0);
+			
+			if (markerIn)
+			{*/
+			var mynewpoint = marker.getPosition();
+
+			$.ajax({url: "overlapcal.php?pid="+marker.mkrId, success: function(result){
+            var ful_string = result;
+					lines = ful_string.split("\n");
+					for (var i=0; i<lines.length; i++) {
+						if (lines[i].length > 1) {
+							parts = lines[i].split("|");
+							var latitude = parseFloat(parts[0]);
+							var longitude = parseFloat(parts[1]);
+							var dbpoint = {lat: latitude, lng: longitude};
+							var d = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(latitude,longitude), new google.maps.LatLng(mynewpoint.lat(),mynewpoint.lng()));
+							if (d<100.00)
+							{
+								ttest = "fail";
+							}
+						}
+					}
+					
+					if (ttest=="fail")
+					{
+						alert ("Buffer Overlaps! Please Choose a different Location.");
+						marker.setPosition(lastpoint);
+						ttest="OK";
+					}
+					else
+					{
+						infowindow.setContent(marker.info);
+						lastmarker = marker;
+						try {infowindow.close();}catch(err) {}
+						try {infowindowtitle.close();}catch(err) {}
+						infowindow.open(map, marker);
+						$(function() {$('#from_time').timeEntry();$('#to_time').timeEntry();});
+						//$(function() {$('#to_time').timeEntry();});
+						//document.getElementById("markers").value=marker.tag;
+					}
+        }});
+			/*}
+			else
+			{
+				marker.setPosition(lastpoint);
+			}*/
+			
+			
+			
+	
+  });
+	  marker.addListener('dblclick', function() {
+		  infowindow.setContent(marker.info);
+			lastmarker = marker;
+			try {infowindow.close();}catch(err) {}
+		try {infowindowtitle.close();}catch(err) {}
+    infowindow.open(map, marker);
+	$(function() {$('#from_time').timeEntry();$('#to_time').timeEntry();});
+						//$(function() {$('#to_time').timeEntry();});
+	//document.getElementById("markers").value=marker.tag;
+  });
+		
+        return marker;
+      }
+	  
+
+	  
+	
+    function initMap() 
+	{
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: new google.maps.LatLng(62.3903, -147.832),
+        zoom: 4,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+      });
+	  
+	  
+      layer_0 = new google.maps.FusionTablesLayer({
+        query: {
+          select: "col0",
+          from: "1DGsIfYAZ3eKRBnAzIO_9mmuJpGeBrUGn6o_D_zWt"
+        },
+        map: map,
+        styleId: 2,
+        templateId: 2
+      });
+	  
+	  google.maps.event.addListener(layer_0,'click',function (event){
+		  var latitude = event.latLng.lat();
+    	  var longitude = event.latLng.lng();
+		  var point = {lat: latitude, lng: longitude};
+		  createInputMarker(point);
+		  
+		  });
+		  
+		  google.maps.event.addListener(map,'mousedown',function (event){
+		  drageddd=false;
+		  });
+		  
+	 google.maps.event.addListener(map,'mouseup',function (event){
+		  //alert("map mouseup");
+		  if (drageddd){
+		  alert ("Only Allowed in the Layer Please Choose a different Location.");
+			lastmarker.setPosition(lastpoint);
+  			drageddd=false;}
+		  });
+		  infowindowtitle = new google.maps.InfoWindow({});
+		  infowindow = new google.maps.InfoWindow({});
+		  
+    }
+	
+
+	
+  </script>
+
+
+<script>
+$(document).ready(function(){load_old_mkrs();});
+  </script>
+  
+
+  
